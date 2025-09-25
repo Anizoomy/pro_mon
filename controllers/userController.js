@@ -181,7 +181,7 @@ exports.forgotPassword = async(req,res)=>{
 }
 
 // Controller to change password
-exports.changePassword = async(req,res)=>{
+exports.resetPassword = async(req,res)=>{
     try {
         // Get newPassword and confirmPassword from request body
         const {newPassword, confirmPassword} = req.body
@@ -219,4 +219,55 @@ exports.changePassword = async(req,res)=>{
             error: error.message
         });  
     }
+};
+
+
+exports.changePassword = async (req, res) => {
+  try {
+    const {oldPassword, newPassword, confirmPassword} = req.body
+    if(!oldPassword || !newPassword || !confirmPassword) {
+      res.statud(400).json({
+        message: 'All fields are required'
+      })
+    }
+    const id = req.user
+
+    const user = await userModel.findById(id)
+
+    const checkPassword = await bcrypt.compare(oldPassword, user.password)
+    if(!checkPassword) {
+      return res.status(400).json({
+        message: 'Password does not match your current password'
+      })
+    }
+    const checkExistingPass = await bcrypt.compare(newPassword, user.password)
+
+    if(checkExistingPass) {
+      return res.status(400).json({
+        message: 'You cannot use previous password'
+      })
+    }
+
+    if(confirmPassword !== newPassword){
+      return res.status(400).json({
+        message: 'New passwords must match'
+      })
+    }
+
+    const salt = await bcrypt.genSalt(10)
+    const hashPassword = await bcrypt.hash(confirmPassword, salt)
+
+    await userModel.findByIdAndUpdate(id, {password: hashPassword}, {new:true})
+
+    res.status(200).json({
+      message: "Password successfully changed"
+    })
+
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
 }
+ 

@@ -18,7 +18,9 @@ mogoonse.connect(db)
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost: ${PORT}`);
 })
-}).catch((error) => {
+
+})
+.catch((error) => {
     console.log('Error connecting to database', error.message);
 })
 
