@@ -5,7 +5,6 @@ const mogoonse = require('mongoose');
 const db = process.env.DATABASE_URI
 const cors = require('cors')
 const userRouter = require ('./router/userRouter')
-const jwt = require('jsonwebtoken')
 const app = express();
 
 app.use(express.json())

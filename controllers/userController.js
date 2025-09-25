@@ -10,9 +10,13 @@ const { forgotHtml } = require('../middleware/forgot')
 
 exports.create = async (req, res) => {
     try {
+        
         const { fullName, email, age, password, phoneNumber } = req.body;
+        
         const file = req.file;
+        
         let response;
+        
         const existingEmail = await userModel.findOne({ email: email.toLowerCase });
 
         const existingPhoneNumber = await userModel.findOne({ phoneNumber: phoneNumber });
@@ -76,7 +80,9 @@ exports.create = async (req, res) => {
 
 exports.verifyUser = async (req, res) => {
     try {
+        
         const checkUser = await userModel.findById(req.params, id)
+        
         if (!checkUser) {
             return res.status(404).json({
                 message: 'User not found'
@@ -104,30 +110,27 @@ exports.verifyUser = async (req, res) => {
 
 
 
-// Controller to log in a user
-exports.login = async (req, res) => {
+
+exports.login = async (req,res)=>{
     try {
-        // Get email and password from request body
-        const { email, password } = req.body
-        // Find user by email
-        const checkUser = await userModel.findOne({ email: email.toLowerCase().trim() })
-        // If user not found, return a response
-        if (!checkUser) {
+        
+        const {email, password} = req.body
+        const checkUser = await userModel.findOne({email: email.toLowerCase().trim()})
+        if(!checkUser){
             return res.status(400).json({
                 message: "Invalid credentials"
             })
         }
-        // Compare provided password with the previously hashed password
+       
         const checkPassword = await bcrypt.compare(password, checkUser.password)
-        // If password does not match, return a response
-        if (!checkUser || !checkPassword) {
+       
+        if(!checkUser || !checkPassword){
             return res.status(400).json({
                 message: "Invalid credentials"
             })
         }
-        // Generate JWT token for user
-        const token = jwt.sign({ id: checkUser._id }, "daniel", { expiresIn: "1d" })
-        // Respond with user data and token
+        
+        const token = jwt.sign({id: checkUser._id}, "daniel", {expiresIn: "1d"})
         res.status(200).json({
             message: `Login Successful`,
             data: checkUser,
@@ -141,36 +144,34 @@ exports.login = async (req, res) => {
     }
 }
 
-// Controller to handle forgot password 
-exports.forgotPassword = async (req, res) => {
+
+exports.forgotPassword = async(req,res)=>{
     try {
-        // Get email from request body
-        const { email } = req.body
-        // Find user by email
-        const checkEmail = await userModel.findOne({ email: email.toLowerCase().trim() })
-        // If user not found, return a response
-        if (!checkEmail) {
+        
+        const {email} = req.body;
+        const checkEmail = await userModel.findOne({email: email.toLowerCase().trim()})
+      
+        if(!checkEmail){
             return res.status(400).json({
                 message: "Invalid email provided"
             })
         }
-        // Set email subject
+        
         const subject = `Reset Password`
-        // Generate JWT token for password reset
-        const token = jwt.sign({ id: checkEmail._id }, "suliya", { expiresIn: "1d" })
-        // Update user with reset token
-        await userModel.findByIdAndUpdate(checkEmail._id, { token }, { new: true })
-        // Create password reset link
+        
+        const token = jwt.sign({id: checkEmail._id}, "suliya", {expiresIn: "1d"})
+        
+        await userModel.findByIdAndUpdate(checkEmail._id, {token},{new:true})
+        
         const link = `${req.protocol}://${req.get("host")}/api/v1/reset/${checkEmail._id}`
-        // Set expiration time for link
+      
         const expires = "24 hours";
-        // Send password reset email
         await sendMail({
             to: email,
             subject,
             html: forgotHtml(link, checkEmail.fullName, expires)
-        })
-        // Return a response
+        }) 
+       
         res.status(200).json({
             message: "Kindly check your email for instructions"
         })
@@ -182,36 +183,33 @@ exports.forgotPassword = async (req, res) => {
     }
 }
 
-// Controller to change password
-exports.resetPassword = async (req, res) => {
+
+exports.resetPassword = async(req,res)=>{
     try {
-        // Get newPassword and confirmPassword from request body
-        const { newPassword, confirmPassword } = req.body
-        // If passwords do not match, return a response
-        if (newPassword !== confirmPassword) {
+        
+        const {newPassword, confirmPassword} = req.body
+        
+        if(newPassword !== confirmPassword){
             return res.status(400).json({
                 message: "Passwords does not match"
             })
         }
-        // Generate salt for password hashing
+     
         const saltRound = await bcrypt.genSalt(10)
-        // Hash the new password
         const hash = await bcrypt.hash(confirmPassword, saltRound)
-        // Find user by ID
+       
         const user = await userModel.findById(req.params.id)
-        // Verify reset token
-        jwt.verify(user.token, "suliya", async (err, result) => {
-            if (err) {
-                // If token expired, return a response
+       
+        jwt.verify(user.token, "suliya", async(err,result)=>{
+            if(err){
                 return res.status(400).json({
                     message: "Email expired"
                 })
-            } else {
-                // Update user's password and clear token
-                await userModel.findByIdAndUpdate(result.id, { password: hash, token: null }, { new: true })
+            } else{
+                await userModel.findByIdAndUpdate(result.id, {password:hash,token:null}, {new:true})
             }
         })
-        // Return a response
+       
         res.status(200).json({
             message: "Password Successfully Changed"
         })
@@ -272,3 +270,4 @@ exports.changePassword = async (req, res) => {
         });
     }
 }
+ 
